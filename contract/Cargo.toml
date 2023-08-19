@@ -1,0 +1,44 @@
+[package]
+name = "y_psp22_token"
+version = "0.1.0"
+edition = "2021"
+description = "Yew psp22 Dashboard Token Contract"
+authors = ["Christian <chriamue@gmail.com>"]
+license = "MIT"
+
+[dependencies]
+ink = { version = "4.2.1", default-features = false }
+openbrush = { git = "https://github.com/Brushfam/openbrush-contracts", tag = "4.0.0-beta", default-features = false, features = ["psp22", "ownable"] }
+
+scale = { package = "parity-scale-codec", version = "3.6", default-features = false, features = ["derive"] }
+scale-info = { version = "2.9", default-features = false, features = ["derive"] }
+
+[dev-dependencies]
+ink_env = { version = "4.2.1", default-features = false }
+ink_e2e = { version = "4.2.1" }
+test_helpers = { git = "https://github.com/Brushfam/openbrush-contracts", tag = "4.0.0-beta", default-features = false }
+tokio = { version = "1.27.0", default-features = false, features = ["full"] }
+
+[lib]
+name = "y_psp22_token"
+path = "lib.rs"
+
+[[example]]
+name = "example"
+path = "example.rs"
+
+[features]
+default = ["std"]
+std = [
+    "ink/std",
+    "scale/std",
+    "scale-info/std",
+    "openbrush/std",
+]
+ink-as-dependency = []
+e2e-tests = []
+
+[profile.dev]
+codegen-units = 16
+lto = false
+overflow-checks = false
