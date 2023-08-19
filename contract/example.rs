@@ -1,10 +1,10 @@
-use y_psp22_token::y_psp22_token::YTokenRef;
 use ink::primitives::AccountId;
 use ink_e2e::subxt::utils::AccountId32;
 use ink_e2e::{build_message, subxt::config::SubstrateConfig, subxt::OnlineClient, Client};
 use ink_env::DefaultEnvironment;
 use openbrush::contracts::psp22::psp22_external::PSP22;
 use std::str::FromStr;
+use y_psp22_token::y_psp22_token::YTokenRef;
 
 fn address_from_string(address: String) -> AccountId {
     let address: AccountId32 = AccountId32::from_str(&address).unwrap();
