@@ -18,6 +18,7 @@ use web_sys::EventTarget;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use std::hash::Hash;
+use crate::services::get_total_supply;
 
 use crate::services::{
     extension_signature_for_partial_extrinsic, get_accounts, polkadot, Account, TokenService,
@@ -147,7 +148,7 @@ impl Component for TokenComponent {
 
                     let remark_call = polkadot::tx().system().remark(message.to_vec());
 
-                    let payload = create_playload();
+                    //let payload = create_playload();
 
                     let api = self.online_client.as_ref().unwrap().clone();
 
@@ -156,13 +157,17 @@ impl Component for TokenComponent {
                     ctx.link()
                     .send_future(
                         async move {
+
+                            get_total_supply().await.unwrap();
+                            /*
                             web_sys::console::log_1(&format!("Payload: {:?}", payload).into());
+                            
                             let result =  api.tx()
                             .sign_and_submit_then_watch_default(&payload, &dev::alice())
                             .await.unwrap().wait_for_finalized_success()
                             .await.unwrap();
                             web_sys::console::log_1(&format!("Run Result: {:?}", result).into());
-
+                            
                             let partial_extrinsic =
                                 match api.tx().create_partial_signed(&payload, &account_id, Default::default()).await {
                                     Ok(partial_extrinsic) => partial_extrinsic,
@@ -184,7 +189,7 @@ impl Component for TokenComponent {
                             // do a dry run (to debug in the js console if the extrinsic would work)
                             let dry_res = signed_extrinsic.dry_run(None).await;
                             web_sys::console::log_1(&format!("Dry Run Result: {:?}", dry_res).into());
-
+                            */
                             Message::RequestBalance
                         }
                     );

@@ -22,7 +22,7 @@ jobs:
           version: "latest"
 
       - run: cargo install --locked trunk
-      - run: cd dapp && trunk build --release
+      - run: cd dapp && trunk build --release --public-url /yew-psp22-dashboard
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

@@ -90,6 +90,8 @@ extern "C" {
     pub fn js_get_accounts() -> Promise;
     #[wasm_bindgen(js_name = signPayload)]
     pub fn js_sign_payload(payload: String, source: String, address: String) -> Promise;
+    #[wasm_bindgen(js_name = fetchTotalSupply)]
+    pub fn js_fetch_total_supply() -> Promise;
 }
 
 /// DTO to communicate with JavaScript
@@ -103,6 +105,16 @@ pub struct Account {
     pub ty: String,
     /// ss58 formatted address as string. Can be converted into AccountId32 via it's FromStr implementation.
     pub address: String,
+}
+
+pub async fn get_total_supply() -> Result<String, anyhow::Error> {
+    let result = JsFuture::from(js_fetch_total_supply())
+        .await
+        .map_err(|js_err| anyhow!("{js_err:?}"))?;
+    let total_supply = result
+        .as_string()
+        .ok_or(anyhow!("Error converting JsValue into String"))?;
+    Ok(total_supply)
 }
 
 pub async fn get_accounts() -> Result<Vec<Account>, anyhow::Error> {
