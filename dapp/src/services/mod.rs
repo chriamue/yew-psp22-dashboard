@@ -91,7 +91,9 @@ extern "C" {
     #[wasm_bindgen(js_name = signPayload)]
     pub fn js_sign_payload(payload: String, source: String, address: String) -> Promise;
     #[wasm_bindgen(js_name = fetchTotalSupply)]
-    pub fn js_fetch_total_supply() -> Promise;
+    pub fn js_fetch_total_supply(contract: String) -> Promise;
+    #[wasm_bindgen(js_name = fetchBalance)]
+    pub fn js_fetch_balance(contract: String, account: String) -> Promise;
 }
 
 /// DTO to communicate with JavaScript
@@ -107,8 +109,18 @@ pub struct Account {
     pub address: String,
 }
 
-pub async fn get_total_supply() -> Result<String, anyhow::Error> {
-    let result = JsFuture::from(js_fetch_total_supply())
+pub async fn get_total_supply(contract: String) -> Result<String, anyhow::Error> {
+    let result = JsFuture::from(js_fetch_total_supply(contract))
+        .await
+        .map_err(|js_err| anyhow!("{js_err:?}"))?;
+    let total_supply = result
+        .as_string()
+        .ok_or(anyhow!("Error converting JsValue into String"))?;
+    Ok(total_supply)
+}
+
+pub async fn get_balance(contract: String, account: String) -> Result<String, anyhow::Error> {
+    let result = JsFuture::from(js_fetch_balance(contract, account))
         .await
         .map_err(|js_err| anyhow!("{js_err:?}"))?;
     let total_supply = result

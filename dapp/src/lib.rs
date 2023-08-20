@@ -51,9 +51,9 @@ fn switch(routes: Route) -> Html {
             html! {
             <div>
                 <h1>{"Welcome to the Subxt WASM examples!"}</h1>
-                <a href="/signing"> <button>{"Signing Examples"} </button></a>
-                <a href="/fetching"> <button>{"Fetching and Subscribing Examples"}</button></a>
-                <a href="/token"> <button>{"Token Examples"} </button></a>
+                <Link<Route> to={Route::Signing}> <button>{"Signing Examples"} </button></Link<Route>>
+                <Link<Route> to={Route::Fetching}> <button>{"Fetching and Subscribing Examples"}</button></Link<Route>>
+                <Link<Route> to={Route::Token}> <button>{"Token Examples"} </button></Link<Route>>
             </div> }
         }
     }

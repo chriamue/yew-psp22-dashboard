@@ -47,4 +47,12 @@ cd dapp
 trunk serve
 ```
 
+or run the following command to build the dApp and serve it with a local server:
+
+```bash
+trunk build --release
+cd dist
+python3 -m http.server 8080
+```
+
 Open the dApp at http://localhost:8080/

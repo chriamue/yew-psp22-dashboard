@@ -18,7 +18,7 @@ use web_sys::EventTarget;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use std::hash::Hash;
-use crate::services::get_total_supply;
+use crate::services::{get_total_supply, get_balance};
 
 use crate::services::{
     extension_signature_for_partial_extrinsic, get_accounts, polkadot, Account, TokenService,
@@ -158,7 +158,7 @@ impl Component for TokenComponent {
                     .send_future(
                         async move {
 
-                            get_total_supply().await.unwrap();
+                            get_total_supply("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx".to_string()).await.unwrap();
                             /*
                             web_sys::console::log_1(&format!("Payload: {:?}", payload).into());
                             
@@ -204,11 +204,14 @@ impl Component for TokenComponent {
                     link.send_future(async move {
                         let account_id: AccountId32 =
                             AccountId32::from_str(&account_clone).unwrap();
-                        match service_clone
-                            .get_balance_of(&account_id, account_clone.clone())
+                        
+                        match get_balance("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx".to_string(), account_clone.clone())
                             .await
                         {
-                            Ok(balance) => Message::ReceivedBalance(balance),
+                            Ok(balance) => {
+                                web_sys::console::log_1(&format!("Balance: {:?}", balance).into());
+                                Message::ReceivedBalance(balance.parse().unwrap())
+                            },
                             Err(_) => {
                                 Message::Error(anyhow!("Failed to fetch balance.".to_string()))
                             }

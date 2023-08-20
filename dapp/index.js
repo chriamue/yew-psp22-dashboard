@@ -53,46 +53,73 @@ async function loadContractMetadata() {
 
   return await response.json();
 }
-
-async function fetchTotalSupply() {
+async function initApi() {
   const { ApiPromise, WsProvider } = await import(
     "https://cdn.jsdelivr.net/npm/@polkadot/api@10.9.1/+esm"
-  );
-  const { ContractPromise } = await import(
-    "https://cdn.jsdelivr.net/npm/@polkadot/api-contract@10.9.1/+esm"
   );
 
   const provider = new WsProvider("ws://127.0.0.1:9944");
   const api = await ApiPromise.create({ provider });
 
-  const contractAddress = "5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx";
-  const alice = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
 
-  // Load metadata from the JSON file
-  const metadata = await loadContractMetadata();
-
-  const contract = new ContractPromise(api, metadata, contractAddress);
-
-  console.log("contract:", contract.query);
-
-  const gasLimit = 3000n * 1000000n;
-  const storageDepositLimit = null;
-
-  const totalSupply = await contract.query["psp22::totalSupply"](
-    alice, 
-    {
-      gasLimit,
-      storageDepositLimit,
-    }
-  );
-
-  console.log("totalSupply:", totalSupply);
-
-  if (!totalSupply.isOk) {
-    throw new Error("Failed to fetch total supply", totalSupply.asErr);
-  }
-
-  console.log(`Total Supply: ${totalSupply.output.toNumber()}`);
+  return { api };
 }
 
-fetchTotalSupply().catch(console.error);
+async function queryContract(contractAddress, queryFunction, ...args) {
+  const { ContractPromise } = await import(
+    "https://cdn.jsdelivr.net/npm/@polkadot/api-contract@10.9.1/+esm"
+  );
+
+  const { api } = await initApi();
+
+  const metadata = await loadContractMetadata();
+  const contract = new ContractPromise(api, metadata, contractAddress);
+
+  const { BN, BN_ONE } = await import(
+    "https://cdn.jsdelivr.net/npm/@polkadot/util@12.4.1/+esm"
+  );
+
+  const MAX_CALL_WEIGHT = new BN(5_000_000_000_000).isub(BN_ONE);
+  const PROOFSIZE = new BN(1_000_000);
+
+  const gasLimit = api?.registry.createType("WeightV2", {
+    refTime: MAX_CALL_WEIGHT,
+    proofSize: PROOFSIZE,
+  });
+
+  const storageDepositLimit = null;
+
+  const { gasRequired, storageDeposit, result, output } = await contract.query[queryFunction](
+    api.default,
+    { gasLimit, storageDepositLimit },
+    ...args
+  );
+
+  console.log(result.toHuman());
+  console.log(gasRequired.toHuman());
+
+  if (result.isOk) {
+    console.log(`Success ${queryFunction}`, output.toHuman());
+  } else {
+    console.error("Error", result.asErr);
+    throw new Error(result.asErr);
+  }
+
+  return output.toNumber().toString();
+}
+
+async function fetchTotalSupply(contractAddress) {
+  return await queryContract(contractAddress, "psp22::totalSupply");
+}
+
+async function fetchBalance(contractAddress, accountAddress) {
+  return await queryContract(contractAddress, "psp22::balanceOf", accountAddress);
+}
+
+fetchTotalSupply("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx").catch(
+  console.error
+);
+
+fetchBalance("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx", "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").catch(
+  console.error
+);
