@@ -7,16 +7,15 @@ authors = ["Christian <chriamue@gmail.com>"]
 license = "MIT"
 
 [dependencies]
-ink = { version = "4.2.1", default-features = false }
-openbrush = { git = "https://github.com/Brushfam/openbrush-contracts", tag = "4.0.0-beta", default-features = false, features = ["psp22", "ownable"] }
+ink = { version = "4.3.0", default-features = false }
+openbrush = { git = "https://github.com/Brushfam/openbrush-contracts", tag = "4.0.0-beta.1", default-features = false, features = ["psp22", "ownable"] }
 
 scale = { package = "parity-scale-codec", version = "3.6", default-features = false, features = ["derive"] }
 scale-info = { version = "2.9", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
-ink_env = { version = "4.2.1", default-features = false }
-ink_e2e = { version = "4.2.1" }
-test_helpers = { git = "https://github.com/Brushfam/openbrush-contracts", tag = "4.0.0-beta", default-features = false }
+ink_env = { version = "4.3.0", default-features = false }
+ink_e2e = { version = "4.3.0" }
 tokio = { version = "1.27.0", default-features = false, features = ["full"] }
 
 [lib]

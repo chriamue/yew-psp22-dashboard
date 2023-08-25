@@ -17,7 +17,7 @@ https://github.com/Brushfam/openbrush-contracts/tree/main/examples/psp22_extensi
 
 ```bash
 rustup component add rust-src
-cargo install --force --locked cargo-contract --version 4.0.0-alpha
+cargo install --force --locked cargo-contract --version 3.2.0
 ```
 
 ## Test Node
@@ -34,6 +34,12 @@ substrate-contracts-node --base-path chain
 ```bash
 cd contract
 cargo contract build --release
+```
+
+## Test the Contract
+
+```bash
+cargo test --release --features e2e-tests
 ```
 
 ### Deploy Contracts

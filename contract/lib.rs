@@ -24,19 +24,49 @@ pub mod y_psp22_token {
         }
     }
 
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        #[ink::test]
+        fn total_supply_works() {
+            let token = YToken::new(100);
+            assert_eq!(PSP22Impl::total_supply(&token), 100);
+        }
+
+    }
+
     #[cfg(all(test, feature = "e2e-tests"))]
-    pub mod tests {
+    pub mod e2e_tests {
+        use super::*;
+        use ink_e2e::subxt::tx::Signer;
+        use ink_e2e::{build_message, PolkadotConfig};
+        use ink_e2e::Keypair;
         use openbrush::contracts::psp22::psp22_external::PSP22;
-        #[rustfmt::skip]
-    use super::*;
-        #[rustfmt::skip]
-    use ink_e2e::{build_message, PolkadotConfig};
 
         type ContractRef = YTokenRef;
 
-        use test_helpers::{address_of, balance_of};
-
         type E2EResult<T> = Result<T, Box<dyn std::error::Error>>;
+
+        fn alice() -> ink::primitives::AccountId {
+            ink::env::test::default_accounts::<ink::env::DefaultEnvironment>().alice
+        }
+        fn bob() -> ink::primitives::AccountId {
+            ink_env::test::default_accounts::<ink::env::DefaultEnvironment>().bob
+        }
+
+        async fn balance_of(
+            client: &mut ink_e2e::Client<PolkadotConfig, ink_env::DefaultEnvironment>,
+            address: ink::primitives::AccountId,
+            account: ink::primitives::AccountId,
+        ) -> Balance {
+            let _msg = build_message::<ContractRef>(address.clone())
+                .call(|contract| contract.balance_of(account));
+            let result = client
+                .call_dry_run(&ink_e2e::alice(), &_msg, 0, None)
+                .await
+                .return_value();
+            result
+        }
 
         #[ink_e2e::test]
         async fn assigns_initial_balance(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
@@ -49,7 +79,7 @@ pub mod y_psp22_token {
 
             let result = {
                 let _msg = build_message::<ContractRef>(address.clone())
-                    .call(|contract| contract.balance_of(address_of!(alice)));
+                    .call(|contract| contract.balance_of(alice()));
                 client.call_dry_run(&ink_e2e::alice(), &_msg, 0, None).await
             };
 
@@ -71,7 +101,7 @@ pub mod y_psp22_token {
 
             let result = {
                 let _msg = build_message::<ContractRef>(address.clone())
-                    .call(|contract| contract.transfer(address_of!(bob), 50, vec![]));
+                    .call(|contract| contract.transfer(bob(), 50, vec![]));
                 client
                     .call(&ink_e2e::alice(), _msg, 0, None)
                     .await
@@ -80,9 +110,9 @@ pub mod y_psp22_token {
 
             assert!(matches!(result.return_value(), Ok(())));
 
-            let balance_of_alice = balance_of!(client, address, alice);
+            let balance_of_alice = balance_of(&mut client, address, alice()).await;
 
-            let balance_of_bob = balance_of!(client, address, bob);
+            let balance_of_bob = balance_of(&mut client, address, bob()).await;
 
             assert_eq!(balance_of_bob, 50, "Bob should have 50 tokens");
             assert_eq!(balance_of_alice, 50, "Alice should have 50 tokens");
@@ -103,7 +133,7 @@ pub mod y_psp22_token {
 
             let result = {
                 let _msg = build_message::<ContractRef>(address.clone())
-                    .call(|contract| contract.transfer(address_of!(bob), 101, vec![]));
+                    .call(|contract| contract.transfer(bob(), 101, vec![]));
                 client.call_dry_run(&ink_e2e::alice(), &_msg, 0, None).await
             };
 
