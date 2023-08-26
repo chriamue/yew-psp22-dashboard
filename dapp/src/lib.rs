@@ -4,6 +4,8 @@ use yew_router::prelude::*;
 
 use routes::fetching::FetchingExamplesComponent;
 use routes::token::TokenComponent;
+
+mod components;
 mod routes;
 mod services;
 

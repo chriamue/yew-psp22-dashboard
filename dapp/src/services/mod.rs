@@ -90,10 +90,6 @@ extern "C" {
     pub fn js_get_accounts() -> Promise;
     #[wasm_bindgen(js_name = signPayload)]
     pub fn js_sign_payload(payload: String, source: String, address: String) -> Promise;
-    #[wasm_bindgen(js_name = fetchTotalSupply)]
-    pub fn js_fetch_total_supply(contract: String) -> Promise;
-    #[wasm_bindgen(js_name = fetchBalance)]
-    pub fn js_fetch_balance(contract: String, account: String) -> Promise;
 }
 
 /// DTO to communicate with JavaScript

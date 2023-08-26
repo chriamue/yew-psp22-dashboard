@@ -9,6 +9,7 @@ use yew_router::prelude::Link;
 
 use crate::services::{get_accounts, Account, TokenService};
 use crate::Route;
+use crate::components::SendTokenComponent;
 
 pub struct TokenComponent {
     contract: String,
@@ -115,7 +116,10 @@ impl Component for TokenComponent {
                             AccountId32::from_str(&account_clone).unwrap();
                         web_sys::console::log_1(&format!("Account ID: {:?}", account_id).into());
 
-                        match token_service.get_balance(contract, account_clone.clone()).await {
+                        match token_service
+                            .get_balance(contract, account_clone.clone())
+                            .await
+                        {
                             Ok(balance) => {
                                 web_sys::console::log_1(&format!("Balance: {:?}", balance).into());
                                 Message::ReceivedBalance(balance.parse().unwrap())
@@ -168,6 +172,17 @@ impl Component for TokenComponent {
                     </>
                 )
             }
+        };
+        let send_token_html: Html = match &self.stage {
+            TokenStage::RequestingBalance | TokenStage::DisplayBalance(_) => {
+                html!(
+                    <>
+                        <SendTokenComponent />
+                    </>
+                )
+            },
+            TokenStage::Error(_)
+            | _ => html!(<></>),
         };
         let stage_html: Html = match &self.stage {
             TokenStage::Error(error_message) => {
@@ -238,6 +253,7 @@ impl Component for TokenComponent {
                 <h1>{"Token Management"}</h1>
                 {contract_html}
                 {stage_html}
+                {send_token_html}
             </div>
         }
     }

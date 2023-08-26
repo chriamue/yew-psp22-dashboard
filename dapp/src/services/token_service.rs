@@ -1,17 +1,16 @@
-use crate::services::{js_fetch_balance, js_fetch_total_supply};
 use anyhow::anyhow;
+use js_sys::Promise;
 use subxt::utils::AccountId32;
 use subxt::{OnlineClient, PolkadotConfig};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
-use js_sys::Promise;
 
 #[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(js_name = getAccounts)]
-    pub fn js_get_accounts() -> Promise;
-    #[wasm_bindgen(js_name = signPayload)]
-    pub fn js_sign_payload(payload: String, source: String, address: String) -> Promise;
+    #[wasm_bindgen(js_name = fetchTotalSupply)]
+    pub fn js_fetch_total_supply(contract: String) -> Promise;
+    #[wasm_bindgen(js_name = fetchBalance)]
+    pub fn js_fetch_balance(contract: String, account: String) -> Promise;
 }
 
 #[derive(Clone)]
@@ -47,7 +46,11 @@ impl TokenService {
         Ok(result)
     }
 
-    pub async fn get_balance(&self, contract: String, account: String) -> Result<String, anyhow::Error> {
+    pub async fn get_balance(
+        &self,
+        contract: String,
+        account: String,
+    ) -> Result<String, anyhow::Error> {
         let result = JsFuture::from(js_fetch_balance(contract, account))
             .await
             .map_err(|js_err| anyhow!("{js_err:?}"))?;
