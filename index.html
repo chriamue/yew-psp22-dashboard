@@ -98,9 +98,6 @@ async function queryContract(contractAddress, queryFunction, ...args) {
     ...args
   );
 
-  console.log(result.toHuman());
-  console.log(gasRequired.toHuman());
-
   if (result.isOk) {
     console.log(`Success ${queryFunction}`, output.toHuman());
   } else {
@@ -108,7 +105,7 @@ async function queryContract(contractAddress, queryFunction, ...args) {
     throw new Error(result.asErr);
   }
 
-  return output.toNumber().toString();
+  return output.toHuman().Ok;
 }
 
 async function fetchTotalSupply(contractAddress) {
@@ -123,13 +120,13 @@ fetchTotalSupply("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx").catch(
   console.error
 );
 
-fetchBalance("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx", "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").catch(
+fetchBalance("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx", "5CAKT2tGVrvdu6b4HdQTds57nVNKi6TnjfiMyqPJQG9RQraY").catch(
   console.error
 );
 </script>
     
     <title>Subxt Examples Yew App</title>
   
-<link rel="preload" href="/yew-psp22-dashboard/dapp-158e0fd01a9f060d_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-<link rel="modulepreload" href="/yew-psp22-dashboard/dapp-158e0fd01a9f060d.js"></head>
-<body><script type="module">import init from '/yew-psp22-dashboard/dapp-158e0fd01a9f060d.js';init('/yew-psp22-dashboard/dapp-158e0fd01a9f060d_bg.wasm');</script></body></html>
+<link rel="preload" href="/yew-psp22-dashboard/dapp-fafefa06e8a01963_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+<link rel="modulepreload" href="/yew-psp22-dashboard/dapp-fafefa06e8a01963.js"></head>
+<body><script type="module">import init from '/yew-psp22-dashboard/dapp-fafefa06e8a01963.js';init('/yew-psp22-dashboard/dapp-fafefa06e8a01963_bg.wasm');</script></body></html>
