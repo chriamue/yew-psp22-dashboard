@@ -1,8 +1,10 @@
 use crate::services::polkadot::contracts::calls::types::Call;
 use crate::services::polkadot::runtime_types::sp_weights::weight_v2::Weight;
+use crate::services::{get_balance, get_total_supply};
 use anyhow::anyhow;
 use blake2::{Blake2s256, Digest};
 use futures::FutureExt;
+use std::hash::Hash;
 use std::str::FromStr;
 use subxt::dynamic::Value;
 use subxt::ext::codec::{Decode, Encode};
@@ -17,8 +19,6 @@ use wasm_bindgen::JsCast;
 use web_sys::EventTarget;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
-use std::hash::Hash;
-use crate::services::{get_total_supply, get_balance};
 
 use crate::services::{
     extension_signature_for_partial_extrinsic, get_accounts, polkadot, Account, TokenService,
@@ -72,6 +72,7 @@ fn create_playload() -> Payload<Call> {
 }
 
 pub struct TokenComponent {
+    contract: String,
     account: Option<String>,
     balance: Option<u128>,
     online_client: Option<OnlineClient<PolkadotConfig>>,
@@ -79,9 +80,18 @@ pub struct TokenComponent {
     token_service: Option<TokenService>,
 }
 
+impl TokenComponent {
+    /// # Panics
+    /// panics if self.online_client is None.
+    fn set_contract(&mut self, contract: String) {
+        self.contract = contract;
+    }
+}
+
 pub enum TokenStage {
     Error(String),
     CreatingOnlineClient,
+    EnterContract,
     EnterAccount,
     RequestingBalance,
     DisplayBalance(u128), // The balance can be u128 for illustrative purposes
@@ -93,6 +103,7 @@ pub enum TokenStage {
 pub enum Message {
     Error(anyhow::Error),
     OnlineClientCreated(OnlineClient<PolkadotConfig>),
+    ChangeContract(String),
     TokenServiceCreated(TokenService),
     RequestAccounts,
     ReceivedAccounts(Vec<Account>),
@@ -121,7 +132,8 @@ impl Component for TokenComponent {
         TokenComponent {
             account: None,
             balance: None,
-            stage: TokenStage::CreatingOnlineClient,
+            contract: "5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx".to_string(),
+            stage: TokenStage::EnterContract,
             online_client: None,
             token_service: None,
         }
@@ -132,6 +144,9 @@ impl Component for TokenComponent {
             Message::OnlineClientCreated(online_client) => {
                 self.online_client = Some(online_client);
                 self.stage = TokenStage::EnterAccount;
+            }
+            Message::ChangeContract(contract) => {
+                self.set_contract(contract);
             }
             Message::TokenServiceCreated(service) => {
                 self.token_service = Some(service);
@@ -153,46 +168,47 @@ impl Component for TokenComponent {
                     let api = self.online_client.as_ref().unwrap().clone();
 
                     self.account = Some(account_address.to_string());
+                    let contract = self.contract.clone();
 
-                    ctx.link()
-                    .send_future(
-                        async move {
+                    ctx.link().send_future(async move {
+                        get_total_supply(
+                            contract,
+                        )
+                        .await
+                        .unwrap();
+                        /*
+                        web_sys::console::log_1(&format!("Payload: {:?}", payload).into());
 
-                            get_total_supply("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx".to_string()).await.unwrap();
-                            /*
-                            web_sys::console::log_1(&format!("Payload: {:?}", payload).into());
-                            
-                            let result =  api.tx()
-                            .sign_and_submit_then_watch_default(&payload, &dev::alice())
-                            .await.unwrap().wait_for_finalized_success()
-                            .await.unwrap();
-                            web_sys::console::log_1(&format!("Run Result: {:?}", result).into());
-                            
-                            let partial_extrinsic =
-                                match api.tx().create_partial_signed(&payload, &account_id, Default::default()).await {
-                                    Ok(partial_extrinsic) => partial_extrinsic,
-                                    Err(err) => {
-                                        return Message::Error(anyhow!("could not create partial extrinsic:\n{:?}", err));
-                                    }
-                                };
+                        let result =  api.tx()
+                        .sign_and_submit_then_watch_default(&payload, &dev::alice())
+                        .await.unwrap().wait_for_finalized_success()
+                        .await.unwrap();
+                        web_sys::console::log_1(&format!("Run Result: {:?}", result).into());
 
-                            let Ok(signature) = extension_signature_for_partial_extrinsic(&partial_extrinsic, &api, &account_id, account_source, account_address).await else {
-                                return Message::Error(anyhow!("Signing via extension failed"));
+                        let partial_extrinsic =
+                            match api.tx().create_partial_signed(&payload, &account_id, Default::default()).await {
+                                Ok(partial_extrinsic) => partial_extrinsic,
+                                Err(err) => {
+                                    return Message::Error(anyhow!("could not create partial extrinsic:\n{:?}", err));
+                                }
                             };
 
-                            let Ok(multi_signature) = MultiSignature::decode(&mut &signature[..]) else {
-                                return Message::Error(anyhow!("MultiSignature Decoding"));
-                            };
+                        let Ok(signature) = extension_signature_for_partial_extrinsic(&partial_extrinsic, &api, &account_id, account_source, account_address).await else {
+                            return Message::Error(anyhow!("Signing via extension failed"));
+                        };
 
-                            let signed_extrinsic = partial_extrinsic.sign_with_address_and_signature(&account_id.into(), &multi_signature);
+                        let Ok(multi_signature) = MultiSignature::decode(&mut &signature[..]) else {
+                            return Message::Error(anyhow!("MultiSignature Decoding"));
+                        };
 
-                            // do a dry run (to debug in the js console if the extrinsic would work)
-                            let dry_res = signed_extrinsic.dry_run(None).await;
-                            web_sys::console::log_1(&format!("Dry Run Result: {:?}", dry_res).into());
-                            */
-                            Message::RequestBalance
-                        }
-                    );
+                        let signed_extrinsic = partial_extrinsic.sign_with_address_and_signature(&account_id.into(), &multi_signature);
+
+                        // do a dry run (to debug in the js console if the extrinsic would work)
+                        let dry_res = signed_extrinsic.dry_run(None).await;
+                        web_sys::console::log_1(&format!("Dry Run Result: {:?}", dry_res).into());
+                        */
+                        Message::RequestBalance
+                    });
                 }
             }
             Message::RequestBalance => {
@@ -200,19 +216,23 @@ impl Component for TokenComponent {
                     let account_clone = account.clone();
                     let service_clone = self.token_service.as_ref().unwrap().clone();
                     let link = ctx.link();
+                    let contract = self.contract.clone();
 
                     link.send_future(async move {
                         let account_id: AccountId32 =
                             AccountId32::from_str(&account_clone).unwrap();
                         web_sys::console::log_1(&format!("Account ID: {:?}", account_id).into());
-                        
-                        match get_balance("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx".to_string(), account_clone.clone())
-                            .await
+
+                        match get_balance(
+                            contract,
+                            account_clone.clone(),
+                        )
+                        .await
                         {
                             Ok(balance) => {
                                 web_sys::console::log_1(&format!("Balance: {:?}", balance).into());
                                 Message::ReceivedBalance(balance.parse().unwrap())
-                            },
+                            }
                             Err(_) => {
                                 Message::Error(anyhow!("Failed to fetch balance.".to_string()))
                             }
@@ -242,12 +262,46 @@ impl Component for TokenComponent {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
+        let contract_html: Html = match &self.stage {
+            TokenStage::Error(_)
+            | TokenStage::EnterContract
+            | TokenStage::CreatingOnlineClient
+            | TokenStage::EnterAccount => html!(<></>),
+            _ => {
+                let on_input = ctx.link().callback(move |event: InputEvent| {
+                    let input_element = event.target_dyn_into::<HtmlInputElement>().unwrap();
+                    let value = input_element.value();
+                    Message::ChangeContract(value)
+                });
+
+                html!(
+                    <>
+                        <div class="mb"><b>{"Enter Contract:"}</b></div>
+                        <input oninput={on_input} class="mb" value={AttrValue::from(self.contract.clone())}/>
+                    </>
+                )
+            }
+        };
         let stage_html: Html = match &self.stage {
             TokenStage::Error(error_message) => {
                 html!(<div class="error"> {"Error: "} {error_message} </div>)
             }
             TokenStage::CreatingOnlineClient => {
                 html!(<div>{"Creating Online Client..."}</div>)
+            }
+            TokenStage::EnterContract => {
+                let on_input = ctx.link().callback(move |event: InputEvent| {
+                    let input_element = event.target_dyn_into::<HtmlInputElement>().unwrap();
+                    let value = input_element.value();
+                    Message::ChangeContract(value)
+                });
+
+                html!(
+                    <>
+                        <div class="mb"><b>{"Enter Contract:"}</b></div>
+                        <input oninput={on_input} class="mb" value={AttrValue::from(self.contract.clone())}/>
+                    </>
+                )
             }
             TokenStage::EnterAccount => {
                 let get_accounts_click = ctx.link().callback(|_| Message::RequestAccounts);
@@ -295,6 +349,7 @@ impl Component for TokenComponent {
             <div>
                 <a href="/"> <button>{"<= Back"}</button></a>
                 <h1>{"Token Management"}</h1>
+                {contract_html}
                 {stage_html}
             </div>
         }
