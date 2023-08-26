@@ -1,6 +1,8 @@
 use futures::FutureExt;
 use yew::prelude::*;
+use yew_router::prelude::Link;
 
+use crate::Route;
 use crate::services;
 
 pub struct FetchingExamplesComponent {
@@ -127,7 +129,7 @@ impl Component for FetchingExamplesComponent {
                 }
                 else{
                     <>
-                        <a href="/"> <button>{"<= Back"}</button></a>
+                        <Link<Route> to={Route::Home}> <button>{"<= Back"}</button></Link<Route>>
                         <h1>{"Subxt Fetching and Subscribing Examples"}</h1>
                         <button onclick={subscribe_finalized}>{"Example: Subscribe to Finalized blocks"}</button>
                         <button onclick={fetch_constant}>{"Example: Fetch constant value"}</button>

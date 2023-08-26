@@ -8,9 +8,11 @@ use subxt::tx::SubmittableExtrinsic;
 use subxt::tx::TxPayload;
 use subxt::utils::{AccountId32, MultiSignature};
 
+use crate::Route;
 use crate::services::{extension_signature_for_partial_extrinsic, get_accounts, polkadot, Account};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
+use yew_router::prelude::Link;
 
 pub struct SigningExamplesComponent {
     message: String,
@@ -361,7 +363,7 @@ impl Component for SigningExamplesComponent {
 
         html! {
             <div>
-                <a href="/"> <button>{"<= Back"}</button></a>
+                <Link<Route> to={Route::Home}> <button>{"<= Back"}</button></Link<Route>>
                 <h1>{"Subxt Signing Example"}</h1>
                 {message_html}
                 {signer_account_html}

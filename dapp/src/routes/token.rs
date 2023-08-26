@@ -1,6 +1,7 @@
 use crate::services::polkadot::contracts::calls::types::Call;
 use crate::services::polkadot::runtime_types::sp_weights::weight_v2::Weight;
 use crate::services::{get_balance, get_total_supply};
+use crate::Route;
 use anyhow::anyhow;
 use blake2::{Blake2s256, Digest};
 use futures::FutureExt;
@@ -19,6 +20,7 @@ use wasm_bindgen::JsCast;
 use web_sys::EventTarget;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
+use yew_router::prelude::Link;
 
 use crate::services::{
     extension_signature_for_partial_extrinsic, get_accounts, polkadot, Account, TokenService,
@@ -347,7 +349,7 @@ impl Component for TokenComponent {
 
         html! {
             <div>
-                <a href="/"> <button>{"<= Back"}</button></a>
+                <Link<Route> to={Route::Home}> <button>{"<= Back"}</button></Link<Route>>
                 <h1>{"Token Management"}</h1>
                 {contract_html}
                 {stage_html}
