@@ -7,7 +7,7 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::Link;
 
-use crate::services::{get_accounts, get_balance, get_total_supply, Account, TokenService};
+use crate::services::{get_accounts, Account, TokenService};
 use crate::Route;
 
 pub struct TokenComponent {
@@ -94,9 +94,10 @@ impl Component for TokenComponent {
                     let account_address = account.address.clone();
                     self.account = Some(account_address.to_string());
                     let contract = self.contract.clone();
+                    let token_service = self.token_service.clone().unwrap();
 
                     ctx.link().send_future(async move {
-                        get_total_supply(contract).await.unwrap();
+                        token_service.get_total_supply(contract).await.unwrap();
                         Message::RequestBalance
                     });
                 }
@@ -107,12 +108,14 @@ impl Component for TokenComponent {
                     let link = ctx.link();
                     let contract = self.contract.clone();
 
+                    let token_service = self.token_service.clone().unwrap();
+
                     link.send_future(async move {
                         let account_id: AccountId32 =
                             AccountId32::from_str(&account_clone).unwrap();
                         web_sys::console::log_1(&format!("Account ID: {:?}", account_id).into());
 
-                        match get_balance(contract, account_clone.clone()).await {
+                        match token_service.get_balance(contract, account_clone.clone()).await {
                             Ok(balance) => {
                                 web_sys::console::log_1(&format!("Balance: {:?}", balance).into());
                                 Message::ReceivedBalance(balance.parse().unwrap())
