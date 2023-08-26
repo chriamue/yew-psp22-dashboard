@@ -46,6 +46,10 @@ cargo test --release --features e2e-tests
 
 Open the substrate UI at https://contracts-ui.substrate.io/?rpc=ws://127.0.0.1:9944 and deploy the contracts.
 
+Open the Polkadot Apps UI at https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/accounts
+
+to send some tokens from Alice to your account.
+
 ## Run DApp
 
 ```bash

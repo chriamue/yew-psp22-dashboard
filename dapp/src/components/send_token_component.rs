@@ -14,18 +14,23 @@ pub enum Msg {
     SendTokens,
 }
 
+#[derive(Properties, Clone, PartialEq)]
+pub struct Props {
+    pub onsend: Callback<(String, u128)>,
+}
+
 impl Component for SendTokenComponent {
     type Message = Msg;
-    type Properties = ();
+    type Properties = Props;
 
     fn create(_: &Context<Self>) -> Self {
         SendTokenComponent {
-            to_address: String::new(),
-            amount: 0,
+            to_address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string(),
+            amount: 1,
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::UpdateAddress(addr) => {
                 self.to_address = addr;
@@ -36,8 +41,7 @@ impl Component for SendTokenComponent {
                 }
             }
             Msg::SendTokens => {
-                // Logic to send tokens
-                // You can use the logic from your TokenComponent or another service to actually send the tokens here
+                ctx.props().onsend.emit((self.to_address.clone(), self.amount));
             }
         }
         true

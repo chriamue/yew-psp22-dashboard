@@ -11,6 +11,8 @@ extern "C" {
     pub fn js_fetch_total_supply(contract: String) -> Promise;
     #[wasm_bindgen(js_name = fetchBalance)]
     pub fn js_fetch_balance(contract: String, account: String) -> Promise;
+    #[wasm_bindgen(js_name = transferTokens)]
+    pub fn js_transfer_tokens(contract: String, source: String, sender_address: String, destination_address: String, amount: u64) -> Promise;
 }
 
 #[derive(Clone)]
@@ -68,5 +70,15 @@ impl TokenService {
             .as_string()
             .ok_or(anyhow!("Error converting JsValue into String"))?;
         Ok(total_supply)
+    }
+
+    pub async fn transfer_tokens(&self, contract: String, source: String, sender_address: String, destination_address: String, amount: u128) -> Result<String, anyhow::Error> {
+        let result = JsFuture::from(js_transfer_tokens(contract, source, sender_address, destination_address, amount.try_into().unwrap()))
+            .await
+            .map_err(|js_err| anyhow!("{js_err:?}"))?;
+        let result = result
+            .as_string()
+            .ok_or(anyhow!("Error converting JsValue into String"))?;
+        Ok(result)
     }
 }

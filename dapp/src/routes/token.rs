@@ -7,13 +7,13 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::Link;
 
+use crate::components::SendTokenComponent;
 use crate::services::{get_accounts, Account, TokenService};
 use crate::Route;
-use crate::components::SendTokenComponent;
 
 pub struct TokenComponent {
     contract: String,
-    account: Option<String>,
+    account: Option<Account>,
     balance: Option<u128>,
     online_client: Option<OnlineClient<PolkadotConfig>>,
     stage: TokenStage,
@@ -48,6 +48,7 @@ pub enum Message {
     SignWithAccount(usize),
     RequestBalance,
     ReceivedBalance(u128),
+    SendToken(String, u128),
 }
 
 impl Component for TokenComponent {
@@ -93,7 +94,7 @@ impl Component for TokenComponent {
                 if let TokenStage::SelectAccount(accounts) = &self.stage {
                     let account = accounts.get(i).unwrap();
                     let account_address = account.address.clone();
-                    self.account = Some(account_address.to_string());
+                    self.account = Some(account.clone());
                     let contract = self.contract.clone();
                     let token_service = self.token_service.clone().unwrap();
 
@@ -105,7 +106,7 @@ impl Component for TokenComponent {
             }
             Message::RequestBalance => {
                 if let Some(account) = &self.account {
-                    let account_clone = account.clone();
+                    let account_clone = account.address.clone();
                     let link = ctx.link();
                     let contract = self.contract.clone();
 
@@ -148,6 +149,32 @@ impl Component for TokenComponent {
             Message::ReceivedAccounts(accounts) => {
                 self.stage = TokenStage::SelectAccount(accounts);
             }
+            Message::SendToken(to_address, amount) => {
+                let account = self.account.clone().unwrap();
+                let account_source = account.source.clone();
+                let account_address = account.address.clone();
+                let contract = self.contract.clone();
+                let token_service = self.token_service.clone().unwrap();
+
+                ctx.link().send_future(async move {
+                    match token_service
+                        .transfer_tokens(
+                            contract,
+                            account_source,
+                            account.address,
+                            to_address,
+                            amount,
+                        )
+                        .await
+                    {
+                        Ok(result) => {
+                            web_sys::console::log_1(&format!("Result: {:?}", result).into());
+                            Message::RequestBalance
+                        }
+                        Err(err) => Message::Error(err),
+                    }
+                });
+            }
         }
         true
     }
@@ -175,14 +202,16 @@ impl Component for TokenComponent {
         };
         let send_token_html: Html = match &self.stage {
             TokenStage::RequestingBalance | TokenStage::DisplayBalance(_) => {
+                let send_callback = ctx
+                    .link()
+                    .callback(|(to_address, amount)| Message::SendToken(to_address, amount));
                 html!(
                     <>
-                        <SendTokenComponent />
+                        <SendTokenComponent onsend = {send_callback}/>
                     </>
                 )
-            },
-            TokenStage::Error(_)
-            | _ => html!(<></>),
+            }
+            TokenStage::Error(_) | _ => html!(<></>),
         };
         let stage_html: Html = match &self.stage {
             TokenStage::Error(error_message) => {

@@ -105,6 +105,39 @@ async function queryContract(contractAddress, queryFunction, ...args) {
   return output.toHuman().Ok;
 }
 
+async function transferTokens(contractAddress, source, senderAddress, destinationAddress, amount) {
+  const { ContractPromise } = await import(
+      "https://cdn.jsdelivr.net/npm/@polkadot/api-contract@10.9.1/+esm"
+  );
+  const { api } = await initApi();
+  const metadata = await loadContractMetadata();
+  const contract = new ContractPromise(api, metadata, contractAddress);
+
+  const { BN, BN_ONE } = await import(
+      "https://cdn.jsdelivr.net/npm/@polkadot/util@12.4.1/+esm"
+  );
+
+  const MAX_CALL_WEIGHT = new BN(11344007255).isub(BN_ONE);
+  const PROOFSIZE = new BN(110307);
+
+  const gasLimit = api?.registry.createType("WeightV2", {
+      refTime: MAX_CALL_WEIGHT,
+      proofSize: PROOFSIZE,
+  });
+
+  const storageDepositLimit = null;
+  const extensionMod = await getPolkadotJsExtensionMod();
+  const injector = await extensionMod.web3FromSource(source);
+
+  const result = await contract.tx["psp22::transfer"]({
+      gasLimit,
+      storageDepositLimit,
+  }, destinationAddress, amount, []).signAndSend(senderAddress, { signer: injector.signer });
+  
+  return result.toHuman();
+}
+
+
 async function fetchTotalSupply(contractAddress) {
   return await queryContract(contractAddress, "psp22::totalSupply");
 }
