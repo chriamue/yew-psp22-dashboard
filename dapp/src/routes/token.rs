@@ -1,77 +1,14 @@
-use crate::services::polkadot::contracts::calls::types::Call;
-use crate::services::polkadot::runtime_types::sp_weights::weight_v2::Weight;
-use crate::services::{get_balance, get_total_supply};
-use crate::Route;
 use anyhow::anyhow;
-use blake2::{Blake2s256, Digest};
 use futures::FutureExt;
-use std::hash::Hash;
 use std::str::FromStr;
-use subxt::dynamic::Value;
-use subxt::ext::codec::{Decode, Encode};
-use subxt::tx::Payload;
 use subxt::utils::AccountId32;
-use subxt::utils::MultiAddress;
-use subxt::utils::MultiSignature;
-use subxt::OnlineClient;
-use subxt::PolkadotConfig;
-use subxt_signer::sr25519::dev;
-use wasm_bindgen::JsCast;
-use web_sys::EventTarget;
+use subxt::{OnlineClient, PolkadotConfig};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::Link;
 
-use crate::services::{
-    extension_signature_for_partial_extrinsic, get_accounts, polkadot, Account, TokenService,
-};
-
-fn blake2_256(input: &[u8]) -> Vec<u8> {
-    let mut hasher = Blake2s256::new();
-    hasher.update(input);
-    hasher.finalize().to_vec()
-}
-
-const PROOF_SIZE: u64 = u64::MAX / 2;
-
-fn create_playload() -> Payload<Call> {
-    let alice_pair_signer = dev::alice();
-
-    let contract = "5FmHL1qCfDPQMjzbP9wwXFvdF2GKPP8TqZHLQv5UeuAd6gLn";
-    let selector = "9bae9d5e";
-
-    let contract: MultiAddress<AccountId32, ()> = AccountId32::from_str(contract).unwrap().into();
-
-    let mut call_data = Vec::<u8>::new();
-
-    let bytes = hex::decode(selector).expect("Decoding failed");
-
-    // Append to the vector
-    call_data.extend(bytes);
-
-    web_sys::console::log_1(&format!("Contract: {:?}", contract).into());
-    web_sys::console::log_1(&format!("Call Data: {:?}", call_data).into());
-
-    //call_data.append(&mut (&blake2_256("PSP22::total_supply".as_bytes())[0..4]).to_vec());
-    /*call_data.append(&mut scale::Encode::encode(
-        &(AccountId32::from_str(
-            &"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-        )
-        .unwrap()),
-    ));*/
-    //let call_data = ("psp22::totalSupply".hash()[..3], ).encode();
-
-    polkadot::tx().contracts().call(
-        contract,
-        0,
-        Weight {
-            ref_time: 500_000_000_000,
-            proof_size: PROOF_SIZE,
-        },
-        None,
-        call_data,
-    )
-}
+use crate::services::{get_accounts, get_balance, get_total_supply, Account, TokenService};
+use crate::Route;
 
 pub struct TokenComponent {
     contract: String,
@@ -83,8 +20,6 @@ pub struct TokenComponent {
 }
 
 impl TokenComponent {
-    /// # Panics
-    /// panics if self.online_client is None.
     fn set_contract(&mut self, contract: String) {
         self.contract = contract;
     }
@@ -157,58 +92,11 @@ impl Component for TokenComponent {
                 if let TokenStage::SelectAccount(accounts) = &self.stage {
                     let account = accounts.get(i).unwrap();
                     let account_address = account.address.clone();
-                    let account_source = account.source.clone();
-                    let account_id: AccountId32 = account_address.parse().unwrap();
-
-                    let message = account_address.clone().into_bytes();
-                    self.stage = TokenStage::Signing(account.clone());
-
-                    let remark_call = polkadot::tx().system().remark(message.to_vec());
-
-                    //let payload = create_playload();
-
-                    let api = self.online_client.as_ref().unwrap().clone();
-
                     self.account = Some(account_address.to_string());
                     let contract = self.contract.clone();
 
                     ctx.link().send_future(async move {
-                        get_total_supply(
-                            contract,
-                        )
-                        .await
-                        .unwrap();
-                        /*
-                        web_sys::console::log_1(&format!("Payload: {:?}", payload).into());
-
-                        let result =  api.tx()
-                        .sign_and_submit_then_watch_default(&payload, &dev::alice())
-                        .await.unwrap().wait_for_finalized_success()
-                        .await.unwrap();
-                        web_sys::console::log_1(&format!("Run Result: {:?}", result).into());
-
-                        let partial_extrinsic =
-                            match api.tx().create_partial_signed(&payload, &account_id, Default::default()).await {
-                                Ok(partial_extrinsic) => partial_extrinsic,
-                                Err(err) => {
-                                    return Message::Error(anyhow!("could not create partial extrinsic:\n{:?}", err));
-                                }
-                            };
-
-                        let Ok(signature) = extension_signature_for_partial_extrinsic(&partial_extrinsic, &api, &account_id, account_source, account_address).await else {
-                            return Message::Error(anyhow!("Signing via extension failed"));
-                        };
-
-                        let Ok(multi_signature) = MultiSignature::decode(&mut &signature[..]) else {
-                            return Message::Error(anyhow!("MultiSignature Decoding"));
-                        };
-
-                        let signed_extrinsic = partial_extrinsic.sign_with_address_and_signature(&account_id.into(), &multi_signature);
-
-                        // do a dry run (to debug in the js console if the extrinsic would work)
-                        let dry_res = signed_extrinsic.dry_run(None).await;
-                        web_sys::console::log_1(&format!("Dry Run Result: {:?}", dry_res).into());
-                        */
+                        get_total_supply(contract).await.unwrap();
                         Message::RequestBalance
                     });
                 }
@@ -216,7 +104,6 @@ impl Component for TokenComponent {
             Message::RequestBalance => {
                 if let Some(account) = &self.account {
                     let account_clone = account.clone();
-                    let service_clone = self.token_service.as_ref().unwrap().clone();
                     let link = ctx.link();
                     let contract = self.contract.clone();
 
@@ -225,12 +112,7 @@ impl Component for TokenComponent {
                             AccountId32::from_str(&account_clone).unwrap();
                         web_sys::console::log_1(&format!("Account ID: {:?}", account_id).into());
 
-                        match get_balance(
-                            contract,
-                            account_clone.clone(),
-                        )
-                        .await
-                        {
+                        match get_balance(contract, account_clone.clone()).await {
                             Ok(balance) => {
                                 web_sys::console::log_1(&format!("Balance: {:?}", balance).into());
                                 Message::ReceivedBalance(balance.parse().unwrap())

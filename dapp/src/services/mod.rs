@@ -13,7 +13,7 @@ use wasm_bindgen_futures::JsFuture;
 use yew::{AttrValue, Callback};
 
 pub mod token_service;
-pub use token_service::TokenService;
+pub use token_service::*;
 
 #[subxt::subxt(runtime_metadata_path = "metadata.scale")]
 pub mod polkadot {}
@@ -107,26 +107,6 @@ pub struct Account {
     pub ty: String,
     /// ss58 formatted address as string. Can be converted into AccountId32 via it's FromStr implementation.
     pub address: String,
-}
-
-pub async fn get_total_supply(contract: String) -> Result<String, anyhow::Error> {
-    let result = JsFuture::from(js_fetch_total_supply(contract))
-        .await
-        .map_err(|js_err| anyhow!("{js_err:?}"))?;
-    let total_supply = result
-        .as_string()
-        .ok_or(anyhow!("Error converting JsValue into String"))?;
-    Ok(total_supply)
-}
-
-pub async fn get_balance(contract: String, account: String) -> Result<String, anyhow::Error> {
-    let result = JsFuture::from(js_fetch_balance(contract, account))
-        .await
-        .map_err(|js_err| anyhow!("{js_err:?}"))?;
-    let balance = result
-        .as_string()
-        .ok_or(anyhow!("Error converting JsValue into String"))?;
-    Ok(balance)
 }
 
 pub async fn get_accounts() -> Result<Vec<Account>, anyhow::Error> {
