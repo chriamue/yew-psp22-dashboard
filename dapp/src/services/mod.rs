@@ -123,10 +123,10 @@ pub async fn get_balance(contract: String, account: String) -> Result<String, an
     let result = JsFuture::from(js_fetch_balance(contract, account))
         .await
         .map_err(|js_err| anyhow!("{js_err:?}"))?;
-    let total_supply = result
+    let balance = result
         .as_string()
         .ok_or(anyhow!("Error converting JsValue into String"))?;
-    Ok(total_supply)
+    Ok(balance)
 }
 
 pub async fn get_accounts() -> Result<Vec<Account>, anyhow::Error> {

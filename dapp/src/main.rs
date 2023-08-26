@@ -1,4 +1,3 @@
-use yew::prelude::*;
 use dapp::SubxtExamplesApp;
 
 fn main() {

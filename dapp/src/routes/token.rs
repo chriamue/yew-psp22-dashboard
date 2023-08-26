@@ -204,6 +204,7 @@ impl Component for TokenComponent {
                     link.send_future(async move {
                         let account_id: AccountId32 =
                             AccountId32::from_str(&account_clone).unwrap();
+                        web_sys::console::log_1(&format!("Account ID: {:?}", account_id).into());
                         
                         match get_balance("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx".to_string(), account_clone.clone())
                             .await

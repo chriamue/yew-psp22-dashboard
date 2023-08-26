@@ -95,9 +95,6 @@ async function queryContract(contractAddress, queryFunction, ...args) {
     ...args
   );
 
-  console.log(result.toHuman());
-  console.log(gasRequired.toHuman());
-
   if (result.isOk) {
     console.log(`Success ${queryFunction}`, output.toHuman());
   } else {
@@ -105,7 +102,7 @@ async function queryContract(contractAddress, queryFunction, ...args) {
     throw new Error(result.asErr);
   }
 
-  return output.toNumber().toString();
+  return output.toHuman().Ok;
 }
 
 async function fetchTotalSupply(contractAddress) {
@@ -120,6 +117,6 @@ fetchTotalSupply("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx").catch(
   console.error
 );
 
-fetchBalance("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx", "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").catch(
+fetchBalance("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx", "5CAKT2tGVrvdu6b4HdQTds57nVNKi6TnjfiMyqPJQG9RQraY").catch(
   console.error
 );
