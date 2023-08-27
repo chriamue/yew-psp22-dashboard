@@ -1,9 +1,15 @@
+use crate::services::polkadot;
+use crate::services::polkadot::runtime_types::sp_weights::weight_v2::Weight;
 use anyhow::anyhow;
 use js_sys::Promise;
+use std::str::FromStr;
 use subxt::utils::AccountId32;
+use subxt::utils::MultiAddress;
 use subxt::{OnlineClient, PolkadotConfig};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
+
+const PROOF_SIZE: u64 = u64::MAX / 2;
 
 #[wasm_bindgen]
 extern "C" {
@@ -23,7 +29,7 @@ extern "C" {
 
 #[derive(Clone)]
 pub struct TokenService {
-    client: OnlineClient<PolkadotConfig>,
+    pub client: OnlineClient<PolkadotConfig>,
 }
 
 impl TokenService {
@@ -99,5 +105,62 @@ impl TokenService {
             .as_string()
             .ok_or(anyhow!("Error converting JsValue into String"))?;
         Ok(result)
+    }
+
+    pub async fn get_total_supply_native(&self, contract: String) -> Result<u128, anyhow::Error> {
+        let result = 42;
+        let mut selector: Vec<u8> = [0x16, 0x2d, 0xf8, 0xc2].into();
+        let mut data = Vec::new();
+        data.append(&mut selector);
+
+        let contract: MultiAddress<AccountId32, ()> =
+            AccountId32::from_str(&contract).unwrap().into();
+        let signer = subxt_signer::sr25519::dev::alice();
+        let payload = polkadot::tx().contracts().call(
+            contract, // contract address
+            0,        // transferred_value
+            Weight {
+                ref_time: 11_344_007_255,
+                proof_size: 110307,
+            },
+            None, // storage deposit limit
+            data, // the call data
+        );
+
+        let trinsic = self.client.tx().create_unsigned(&payload)?;
+
+        let validate = self.client.tx().validate(&payload);
+        assert!(validate.is_ok());
+
+        let events = self
+            .client
+            .tx()
+            .sign_and_submit_then_watch_default(&payload, &signer)
+            .await?
+            .extrinsic_hash();
+
+        web_sys::console::log_1(&format!("tx finalized: {:?}", events).into());
+        println!("tx finalized: {:?}", events);
+
+        Ok(42)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[wasm_bindgen_test::wasm_bindgen_test]
+    async fn test_get_total_supply() -> Result<(), Box<dyn std::error::Error>> {
+        let token_service = TokenService::new().await.unwrap();
+        let contract = "5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx".to_string();
+
+        let total_supply = token_service
+            .get_total_supply_native(contract)
+            .await
+            .unwrap();
+        assert_eq!(total_supply, 42);
+
+        Ok(())
     }
 }
