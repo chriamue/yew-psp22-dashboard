@@ -31,3 +31,7 @@ scale = { package = "parity-scale-codec", version = "3.0.0", features = [
     "derive",
 ] }
 sp-core = { version = "21.0.0", default-features = false }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.33"
+yew = { version = "0.20.0", features = ["csr", "ssr"] }

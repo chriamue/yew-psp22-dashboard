@@ -54,6 +54,7 @@ to send some tokens from Alice to your account.
 
 ```bash
 cd dapp
+wasm-pack test --firefox --headless
 trunk serve
 ```
 

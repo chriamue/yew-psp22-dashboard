@@ -60,3 +60,8 @@ fn switch(routes: Route) -> Html {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+}

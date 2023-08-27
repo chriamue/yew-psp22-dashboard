@@ -41,7 +41,9 @@ impl Component for SendTokenComponent {
                 }
             }
             Msg::SendTokens => {
-                ctx.props().onsend.emit((self.to_address.clone(), self.amount));
+                ctx.props()
+                    .onsend
+                    .emit((self.to_address.clone(), self.amount));
             }
         }
         true
@@ -88,5 +90,35 @@ impl Component for SendTokenComponent {
                 </div>
             </div>
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cell::Cell;
+    use std::rc::Rc;
+    use wasm_bindgen::*;
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test::wasm_bindgen_test]
+    async fn create_default() {
+        let onsend = Callback::default();
+        let rendered = yew::LocalServerRenderer::<SendTokenComponent>::with_props(Props { onsend })
+            .render()
+            .await;
+
+        assert!(rendered.contains("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"));
+        assert!(rendered.contains("1"));
+    }
+
+    #[wasm_bindgen_test::wasm_bindgen_test]
+    async fn update_address() {
+        let onsend = Callback::default();
+        let rendered = yew::LocalServerRenderer::<SendTokenComponent>::with_props(Props { onsend })
+            .render()
+            .await;
+
+        assert!(rendered.contains("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"));
     }
 }
