@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, path::Path};
 
 use ink::primitives::AccountId;
 use polkadot::runtime_types::sp_weights::weight_v2::Weight;
@@ -8,6 +8,8 @@ use subxt::{
     OnlineClient, PolkadotConfig,
 };
 use subxt_signer::sr25519::dev;
+use contract_transcode::ContractMessageTranscoder;
+
 
 #[subxt::subxt(runtime_metadata_path = "examples/metadata.scale")]
 pub mod polkadot {}
@@ -15,9 +17,10 @@ pub mod polkadot {}
 const REF_TIME: u64 = 9_375_000_000;
 const PROOF_SIZE: u64 = 524_288;
 
+const METADATA_PATH: &str = "examples/y_psp22_token.json";
 const SMART_CONTRACT: &str = "5DcaqqqKmkcCPYuN9TnthnGDraEAi63SDn9y5qzSA2VETKym";
 const SELECTOR: &'static str = "0x162df8c2";
-const METHOD: &str = "psp22::totalSupply";
+const METHOD: &str = "PSP22::total_supply";
 
 fn address_from_string(address: String) -> AccountId {
     let address: AccountId32 = AccountId32::from_str(&address).unwrap();
@@ -34,19 +37,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let contract: MultiAddress<AccountId32, ()> =
         AccountId32::from_str(SMART_CONTRACT).unwrap().into();
 
-    let mut call_data = Vec::<u8>::new();
+    let transcoder = ContractMessageTranscoder::load(Path::new(METADATA_PATH)).unwrap();
+
+
+    let args: Vec<String> = vec![];
+    let call_data = transcoder.encode(METHOD, &args).unwrap();
+
+    println!("Data: {:?}", call_data);
+
+    //let mut call_data = Vec::<u8>::new();
 
     //let bytes = hex::decode(SELECTOR).expect("Decoding failed");
 
     // Append to the vector
     //call_data.extend(bytes);
 
-    let call_data = from_hex(SELECTOR).unwrap();
+    //let call_data = from_hex(SELECTOR).unwrap();
 
     //let tx = subxt::dynamic::tx("Contracts", "call", call_data.clone()).unwrap();
 
     let call = polkadot::tx().contracts().call(
-        contract.clone(),
+        contract.clone().into(),
         0,
         Weight {
             ref_time: REF_TIME,
