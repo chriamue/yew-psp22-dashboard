@@ -8,6 +8,8 @@ use subxt::utils::MultiAddress;
 use subxt::{OnlineClient, PolkadotConfig};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
+use wasm_bindgen::JsValue;
+use js_sys::Array;
 
 const PROOF_SIZE: u64 = u64::MAX / 2;
 
@@ -24,6 +26,13 @@ extern "C" {
         sender_address: String,
         destination_address: String,
         amount: u64,
+    ) -> Promise;
+
+    #[wasm_bindgen(js_name = queryContract)]
+    pub fn js_query_contract(
+        contract: String,
+        query_function: String,
+        args: JsValue
     ) -> Promise;
 }
 
@@ -65,9 +74,16 @@ impl TokenService {
         contract: String,
         account: String,
     ) -> Result<String, anyhow::Error> {
-        let result = JsFuture::from(js_fetch_balance(contract, account))
-            .await
-            .map_err(|js_err| anyhow!("{js_err:?}"))?;
+        let args = vec![account.clone()];
+        let js_args: Array = args.iter().map(JsValue::from).collect();
+        let result = JsFuture::from(js_query_contract(
+            contract.clone(),
+            "psp22::balanceOf".into(),
+            (js_args).into(),
+        ))
+        .await
+        .map_err(|js_err| anyhow!("{js_err:?}"))?;
+        println!("result: {:?}", result);
         let balance = result
             .as_string()
             .ok_or(anyhow!("Error converting JsValue into String"))?;
@@ -75,8 +91,13 @@ impl TokenService {
     }
 
     pub async fn get_total_supply(&self, contract: String) -> Result<String, anyhow::Error> {
-        let result = JsFuture::from(js_fetch_total_supply(contract))
-            .await
+        let args: Vec<String> = vec![];
+        let js_args: Array = args.iter().map(JsValue::from).collect();
+        let result = JsFuture::from(js_query_contract(
+            contract,
+            "psp22::totalSupply".into(),
+            (js_args).into(),
+        )).await
             .map_err(|js_err| anyhow!("{js_err:?}"))?;
         let total_supply = result
             .as_string()

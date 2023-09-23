@@ -65,7 +65,8 @@ async function initApi() {
   return { api };
 }
 
-async function queryContract(contractAddress, queryFunction, ...args) {
+async function queryContract(contractAddress, queryFunction, args) {
+  console.log("queryContract", contractAddress, queryFunction, args);
   const { ContractPromise } = await import(
     "https://cdn.jsdelivr.net/npm/@polkadot/api-contract@10.9.1/+esm"
   );
@@ -136,20 +137,3 @@ async function transferTokens(contractAddress, source, senderAddress, destinatio
   
   return result.toHuman();
 }
-
-
-async function fetchTotalSupply(contractAddress) {
-  return await queryContract(contractAddress, "psp22::totalSupply");
-}
-
-async function fetchBalance(contractAddress, accountAddress) {
-  return await queryContract(contractAddress, "psp22::balanceOf", accountAddress);
-}
-
-fetchTotalSupply("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx").catch(
-  console.error
-);
-
-fetchBalance("5FbxgE9CZgib7p4oWi34Tx5vqLHsXKNGEWnfMn6pMT7VzwTx", "5CAKT2tGVrvdu6b4HdQTds57nVNKi6TnjfiMyqPJQG9RQraY").catch(
-  console.error
-);
