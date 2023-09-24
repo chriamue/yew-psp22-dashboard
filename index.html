@@ -4,9 +4,9 @@
     
     <base href="/yew-psp22-dashboard/">
     <link rel="stylesheet" href="/yew-psp22-dashboard/index-da10ec8f72f2fdee.css">
-    <script>let getPolkadotJsExtensionMod = (() => {
+    <script>// Singleton for Polkadot JS Extension Module
+let getPolkadotJsExtensionMod = (() => {
   let mod = null;
-
   let initPromise = (async () => {
     mod = await import(
       "https://cdn.jsdelivr.net/npm/@polkadot/extension-dapp@0.46.5/+esm"
@@ -18,6 +18,59 @@
       await initPromise;
     }
     return mod;
+  };
+})();
+
+// Singleton for Polkadot API
+let getPolkadotApi = (() => {
+  let apiInstance = null;
+  let initPromise = (async () => {
+    const { ApiPromise, WsProvider } = await import(
+      "https://cdn.jsdelivr.net/npm/@polkadot/api@10.9.1/+esm"
+    );
+    const provider = new WsProvider("ws://127.0.0.1:9944");
+    apiInstance = await ApiPromise.create({ provider });
+  })();
+
+  return async () => {
+    if (apiInstance == null) {
+      await initPromise;
+    }
+    return apiInstance;
+  };
+})();
+
+// Singleton for Polkadot Util
+let getPolkadotUtil = (() => {
+  let util = null;
+  let initPromise = (async () => {
+    util = await import(
+      "https://cdn.jsdelivr.net/npm/@polkadot/util@12.4.1/+esm"
+    );
+  })();
+
+  return async () => {
+    if (util == null) {
+      await initPromise;
+    }
+    return util;
+  };
+})();
+
+// Singleton for Polkadot Contract API
+let getPolkadotContractApi = (() => {
+  let contractApi = null;
+  let initPromise = (async () => {
+    contractApi = await import(
+      "https://cdn.jsdelivr.net/npm/@polkadot/api-contract@10.9.1/+esm"
+    );
+  })();
+
+  return async () => {
+    if (contractApi == null) {
+      await initPromise;
+    }
+    return contractApi;
   };
 })();
 
@@ -66,39 +119,36 @@ async function initApi() {
 
   const provider = new WsProvider("ws://127.0.0.1:9944");
   const api = await ApiPromise.create({ provider });
-
-
   return { api };
+}
+
+// Helper function to initialize the contract
+async function initContract(contractAddress) {
+  const { ContractPromise } = await getPolkadotContractApi();
+  const api = await getPolkadotApi();
+  const metadata = await loadContractMetadata();
+  return new ContractPromise(api, metadata, contractAddress);
+}
+
+async function getGasLimit() {
+  const { BN, BN_ONE } = await getPolkadotUtil();
+  const MAX_CALL_WEIGHT = new BN(11344007255).isub(BN_ONE);
+  const PROOFSIZE = new BN(131072);
+  const api = await getPolkadotApi();
+  return api?.registry.createType("WeightV2", {
+    refTime: MAX_CALL_WEIGHT,
+    proofSize: PROOFSIZE,
+  });
 }
 
 async function queryContract(contractAddress, queryFunction, args) {
   console.log("queryContract", contractAddress, queryFunction, args);
-  const { ContractPromise } = await import(
-    "https://cdn.jsdelivr.net/npm/@polkadot/api-contract@10.9.1/+esm"
-  );
+  const contract = await initContract(contractAddress);
+  const gasLimit = await getGasLimit();
 
-  const { api } = await initApi();
-
-  const metadata = await loadContractMetadata();
-  const contract = new ContractPromise(api, metadata, contractAddress);
-
-  const { BN, BN_ONE } = await import(
-    "https://cdn.jsdelivr.net/npm/@polkadot/util@12.4.1/+esm"
-  );
-
-  const MAX_CALL_WEIGHT = new BN(5_000_000_000_000).isub(BN_ONE);
-  const PROOFSIZE = new BN(1_000_000);
-
-  const gasLimit = api?.registry.createType("WeightV2", {
-    refTime: MAX_CALL_WEIGHT,
-    proofSize: PROOFSIZE,
-  });
-
-  const storageDepositLimit = null;
-
-  const { gasRequired, storageDeposit, result, output } = await contract.query[queryFunction](
-    api.default,
-    { gasLimit, storageDepositLimit },
+  const { result, output } = await contract.query[queryFunction](
+    contract.api.default,
+    { gasLimit },
     ...args
   );
 
@@ -112,33 +162,25 @@ async function queryContract(contractAddress, queryFunction, args) {
   return output.toHuman().Ok;
 }
 
-async function executeContractFunction(contractAddress, source, senderAddress, functionName, ...args) {
-  const { ContractPromise } = await import(
-      "https://cdn.jsdelivr.net/npm/@polkadot/api-contract@10.9.1/+esm"
-  );
-  const { api } = await initApi();
-  const metadata = await loadContractMetadata();
-  const contract = new ContractPromise(api, metadata, contractAddress);
-
-  const { BN, BN_ONE } = await import(
-      "https://cdn.jsdelivr.net/npm/@polkadot/util@12.4.1/+esm"
-  );
-
-  const MAX_CALL_WEIGHT = new BN(11344007255).isub(BN_ONE);
-  const PROOFSIZE = new BN(110307);
-
-  const gasLimit = api?.registry.createType("WeightV2", {
-      refTime: MAX_CALL_WEIGHT,
-      proofSize: PROOFSIZE,
-  });
-
+async function executeContractFunction(
+  contractAddress,
+  source,
+  senderAddress,
+  functionName,
+  ...args
+) {
+  const contract = await initContract(contractAddress);
+  const gasLimit = await getGasLimit();
   const extensionMod = await getPolkadotJsExtensionMod();
   const injector = await extensionMod.web3FromSource(source);
 
-  const result = await contract.tx[functionName]({
+  const result = await contract.tx[functionName](
+    {
       gasLimit,
-  }, ...args).signAndSend(senderAddress, { signer: injector.signer });
-  
+    },
+    ...args
+  ).signAndSend(senderAddress, { signer: injector.signer });
+
   return result.toHuman();
 }
 </script>
