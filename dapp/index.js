@@ -106,7 +106,7 @@ async function queryContract(contractAddress, queryFunction, args) {
   return output.toHuman().Ok;
 }
 
-async function transferTokens(contractAddress, source, senderAddress, destinationAddress, amount) {
+async function executeContractFunction(contractAddress, source, senderAddress, functionName, ...args) {
   const { ContractPromise } = await import(
       "https://cdn.jsdelivr.net/npm/@polkadot/api-contract@10.9.1/+esm"
   );
@@ -126,14 +126,12 @@ async function transferTokens(contractAddress, source, senderAddress, destinatio
       proofSize: PROOFSIZE,
   });
 
-  const storageDepositLimit = null;
   const extensionMod = await getPolkadotJsExtensionMod();
   const injector = await extensionMod.web3FromSource(source);
 
-  const result = await contract.tx["psp22::transfer"]({
+  const result = await contract.tx[functionName]({
       gasLimit,
-      storageDepositLimit,
-  }, destinationAddress, amount, []).signAndSend(senderAddress, { signer: injector.signer });
+  }, ...args).signAndSend(senderAddress, { signer: injector.signer });
   
   return result.toHuman();
 }
