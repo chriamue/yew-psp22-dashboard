@@ -112,16 +112,6 @@ async function loadContractMetadata() {
 
   return await response.json();
 }
-async function initApi() {
-  const { ApiPromise, WsProvider } = await import(
-    "https://cdn.jsdelivr.net/npm/@polkadot/api@10.9.1/+esm"
-  );
-
-  const provider = new WsProvider("ws://127.0.0.1:9944");
-  const api = await ApiPromise.create({ provider });
-  return { api };
-}
-
 // Helper function to initialize the contract
 async function initContract(contractAddress) {
   const { ContractPromise } = await getPolkadotContractApi();
